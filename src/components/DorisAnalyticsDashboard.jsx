@@ -197,6 +197,8 @@ export default function DorisAnalyticsDashboard() {
     const fmtPct = (num) => `${num.toFixed(2)}%`;
     const fmtCvr = (num) => `${num.toFixed(2)}‱`;
     const fmtMoney = (num) => `$${num.toFixed(2)}`;
+    const topLimit = 20;
+    const topRows = aggregated.slice(0, topLimit);
 
     const dimensions = [
         { key: 'publisher', label: 'Publisher (渠道)', icon: <Globe size={18} /> },
@@ -330,7 +332,7 @@ export default function DorisAnalyticsDashboard() {
 
                         <div className="h-[400px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={aggregated.slice(0, 20)} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                                <ComposedChart data={topRows} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="dimensionKey" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
                                     <YAxis yAxisId="left" orientation="left" tickFormatter={(val) => val} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -348,7 +350,7 @@ export default function DorisAnalyticsDashboard() {
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <h3 className="font-semibold text-slate-700">详细数据列表</h3>
-                            <span className="text-xs text-slate-500">Rows: {aggregated.length}</span>
+                            <span className="text-xs text-slate-500">Rows: {topRows.length}</span>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
@@ -364,7 +366,7 @@ export default function DorisAnalyticsDashboard() {
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                {aggregated.map((row, idx) => (
+                                {topRows.map((row, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-3 font-medium text-slate-700">{row.dimensionKey}</td>
                                         <td className="px-6 py-3 text-right text-slate-600">{fmtNum(row.clicks)}</td>
