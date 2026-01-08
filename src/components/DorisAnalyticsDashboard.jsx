@@ -62,7 +62,7 @@ const normalizeSummary = (summary) => {
         installs,
         events,
         revenues,
-        cvr: clicks > 0 ? (installs / clicks) * 100 : 0,
+        cvr: clicks > 0 ? (installs / clicks) * 10000 : 0,
         evr: installs > 0 ? (events / installs) * 100 : 0,
     };
 };
@@ -79,7 +79,7 @@ const normalizeAggregated = (rows) => rows.map((item) => {
         installs,
         events,
         revenues,
-        cvr: clicks > 0 ? (installs / clicks) * 100 : 0,
+        cvr: clicks > 0 ? (installs / clicks) * 10000 : 0,
         evr: installs > 0 ? (events / installs) * 100 : 0,
     };
 });
@@ -98,7 +98,7 @@ const aggregateMockData = (data, dimension, offerId, dateRange) => {
         revenues: acc.revenues + Number(curr.revenues || 0),
     }), { clicks: 0, installs: 0, events: 0, revenues: 0 });
 
-    summary.cvr = summary.clicks > 0 ? (summary.installs / summary.clicks) * 100 : 0;
+    summary.cvr = summary.clicks > 0 ? (summary.installs / summary.clicks) * 10000 : 0;
     summary.evr = summary.installs > 0 ? (summary.events / summary.installs) * 100 : 0;
 
     const grouped = filtered.reduce((acc, curr) => {
@@ -115,7 +115,7 @@ const aggregateMockData = (data, dimension, offerId, dateRange) => {
 
     const aggregated = Object.values(grouped).map(item => ({
         ...item,
-        cvr: item.clicks > 0 ? (item.installs / item.clicks) * 100 : 0,
+        cvr: item.clicks > 0 ? (item.installs / item.clicks) * 10000 : 0,
         evr: item.installs > 0 ? (item.events / item.installs) * 100 : 0,
     })).sort((a, b) => b.clicks - a.clicks);
 
@@ -147,6 +147,7 @@ export default function DorisAnalyticsDashboard() {
         const fetchData = async () => {
             setLoading(true);
             try {
+                const apiBase = import.meta.env.DEV ? 'http://43.163.113.178' : '';
                 const params = new URLSearchParams();
                 if (dateRange.start && dateRange.end) {
                     params.set('start', dateRange.start);
@@ -158,8 +159,8 @@ export default function DorisAnalyticsDashboard() {
                     params.set('offer_id', selectedOfferId);
                 }
 
-                const response = await fetch(`/api/analytics/${activeDimension}?${params.toString()}`, {
-                    signal: AbortSignal.timeout(2000)
+                const response = await fetch(`${apiBase}/api/analytics/${activeDimension}?${params.toString()}`, {
+                    signal: AbortSignal.timeout(20000)
                 });
 
                 if (!response.ok) throw new Error('Network response was not ok');
@@ -194,6 +195,7 @@ export default function DorisAnalyticsDashboard() {
     // 辅助函数
     const fmtNum = (num) => new Intl.NumberFormat('en-US').format(num);
     const fmtPct = (num) => `${num.toFixed(2)}%`;
+    const fmtCvr = (num) => `${num.toFixed(2)}‱`;
     const fmtMoney = (num) => `$${num.toFixed(2)}`;
 
     const dimensions = [
@@ -245,7 +247,7 @@ export default function DorisAnalyticsDashboard() {
                 <MetricCard label="Total Clicks" value={fmtNum(summary.clicks)} icon={<MousePointer2 size={20} />} color="blue" />
                 <MetricCard label="Total Installs" value={fmtNum(summary.installs)} icon={<Download size={20} />} color="green" />
                 <MetricCard label="Total Events" value={fmtNum(summary.events)} icon={<Layers size={20} />} color="purple" />
-                <MetricCard label="Avg CVR" value={fmtPct(summary.cvr)} subValue="Goal: >1.5%" color="indigo" />
+                <MetricCard label="Avg CVR" value={fmtCvr(summary.cvr)} subValue="Goal: >150‱" color="indigo" />
                 <MetricCard label="Avg EVR" value={fmtPct(summary.evr)} subValue="Goal: >30%" color="orange" />
             </div>
 
@@ -320,8 +322,8 @@ export default function DorisAnalyticsDashboard() {
                                 {dimensions.find(d => d.key === activeDimension)?.label} 转化趋势分析
                             </h2>
                             <div className="flex items-center gap-4 text-xs">
-                                <span className="flex items-center gap-1"><div className="w-3 h-3 bg-indigo-500 rounded-sm"></div> CVR</span>
-                                <span className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> EVR</span>
+                                <span className="flex items-center gap-1"><div className="w-3 h-3 bg-indigo-500 rounded-sm"></div> CVR(‱)</span>
+                                <span className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> EVR(%)</span>
                                 <span className="flex items-center gap-1"><div className="w-3 h-3 bg-slate-200 rounded-sm"></div> Clicks</span>
                             </div>
                         </div>
@@ -331,7 +333,7 @@ export default function DorisAnalyticsDashboard() {
                                 <ComposedChart data={aggregated.slice(0, 20)} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="dimensionKey" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                    <YAxis yAxisId="left" orientation="left" tickFormatter={(val) => `${val}%`} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                                    <YAxis yAxisId="left" orientation="left" tickFormatter={(val) => val} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                                     <YAxis yAxisId="right" orientation="right" hide={true} />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Bar yAxisId="right" dataKey="clicks" fill="#f1f5f9" barSize={40} radius={[4, 4, 0, 0]} name="Clicks" />
@@ -340,7 +342,7 @@ export default function DorisAnalyticsDashboard() {
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>
-                        <p className="text-center text-xs text-slate-400 mt-2">* 仅展示 Top 20 流量记录</p>
+                        <p className="text-center text-xs text-slate-400 mt-2">* 仅展示 Top 20 CVR</p>
                     </div>
 
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -355,7 +357,7 @@ export default function DorisAnalyticsDashboard() {
                                     <th className="px-6 py-3">{dimensions.find(d => d.key === activeDimension)?.label}</th>
                                     <th className="px-6 py-3 text-right">Clicks</th>
                                     <th className="px-6 py-3 text-right">Installs</th>
-                                    <th className="px-6 py-3 text-right text-indigo-600">CVR</th>
+                                    <th className="px-6 py-3 text-right text-indigo-600">CVR(‱)</th>
                                     <th className="px-6 py-3 text-right">Events</th>
                                     <th className="px-6 py-3 text-right text-emerald-600">EVR</th>
                                     <th className="px-6 py-3 text-right">Revenues</th>
@@ -367,7 +369,7 @@ export default function DorisAnalyticsDashboard() {
                                         <td className="px-6 py-3 font-medium text-slate-700">{row.dimensionKey}</td>
                                         <td className="px-6 py-3 text-right text-slate-600">{fmtNum(row.clicks)}</td>
                                         <td className="px-6 py-3 text-right text-slate-600">{fmtNum(row.installs)}</td>
-                                        <td className="px-6 py-3 text-right font-semibold text-indigo-600 bg-indigo-50/30">{fmtPct(row.cvr)}</td>
+                                        <td className="px-6 py-3 text-right font-semibold text-indigo-600 bg-indigo-50/30">{fmtCvr(row.cvr)}</td>
                                         <td className="px-6 py-3 text-right text-slate-600">{fmtNum(row.events)}</td>
                                         <td className="px-6 py-3 text-right font-semibold text-emerald-600 bg-emerald-50/30">{fmtPct(row.evr)}</td>
                                         <td className="px-6 py-3 text-right text-slate-800">{fmtMoney(row.revenues)}</td>
@@ -414,7 +416,7 @@ function CustomTooltip({ active, payload, label }) {
                 <div className="space-y-1">
                     <p className="flex justify-between gap-8"><span className="text-slate-500">Clicks:</span> <span className="font-mono">{new Intl.NumberFormat().format(data.clicks)}</span></p>
                     <p className="flex justify-between gap-8"><span className="text-slate-500">Installs:</span> <span className="font-mono">{new Intl.NumberFormat().format(data.installs)}</span></p>
-                    <p className="flex justify-between gap-8 text-indigo-600 font-semibold"><span>CVR:</span> <span>{data.cvr.toFixed(2)}%</span></p>
+                    <p className="flex justify-between gap-8 text-indigo-600 font-semibold"><span>CVR:</span> <span>{data.cvr.toFixed(2)}‱</span></p>
                     <p className="flex justify-between gap-8 text-emerald-600 font-semibold"><span>EVR:</span> <span>{data.evr.toFixed(2)}%</span></p>
                 </div>
             </div>

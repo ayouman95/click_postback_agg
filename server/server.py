@@ -160,11 +160,15 @@ def get_dimension_analytics(dimension):
                 SUM(clicks) AS clicks,
                 SUM(installs) AS installs,
                 SUM(events) AS events,
-                SUM(revenues) AS revenues
+                SUM(revenues) AS revenues,
+                CASE
+                    WHEN SUM(clicks) = 0 THEN 0
+                    ELSE SUM(installs) / SUM(clicks)
+                END AS cvr
             FROM click_postback_agg
             WHERE dt >= %s AND dt <= %s{offer_filter}
             GROUP BY {dimension_key}
-            ORDER BY clicks DESC
+            ORDER BY cvr DESC, clicks DESC
             LIMIT %s
         """
 
